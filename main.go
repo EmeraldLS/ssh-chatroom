@@ -35,6 +35,7 @@ var (
 	helpCmd        = regexp.MustCompile(`^/help.*`)
 	exitCmd        = regexp.MustCompile(`^/exit.*`)
 	listCmd        = regexp.MustCompile(`^/list.*`)
+	createCmd      = regexp.MustCompile(`^/create.*`)
 )
 
 func helpMsg() string {
@@ -44,6 +45,7 @@ func helpMsg() string {
 	2. /enter <room>: To enter a room
 	3. /exit: To leave the server
 	4. /help: To display this message
+	5. /create: To create a room
 `
 }
 
@@ -66,6 +68,11 @@ func listRooms() string {
 	return sb.String()
 }
 
+func createRoom(name string) {
+	room := &Room{Name: name, History: make([]Message, 0), Users: make([]User, 0)}
+	availableRooms = append(availableRooms, room)
+}
+
 func chat(s ssh.Session) {
 	term := term.NewTerminal(s, fmt.Sprintf("%s > ", s.User()))
 	for {
@@ -76,8 +83,14 @@ func chat(s ssh.Session) {
 		if len(line) > 0 {
 			if string(line[0]) == "/" {
 				switch {
+
 				case exitCmd.MatchString(line):
 					return
+
+				case createCmd.MatchString(line):
+					roomName := strings.Split(line, " ")[1]
+					createRoom(roomName)
+					term.Write([]byte("Room created successfully. Use /enter <name> to enter the room"))
 
 				case listCmd.MatchString(line):
 					_, err = term.Write([]byte(listRooms()))
